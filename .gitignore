@@ -207,3 +207,6 @@ metricsdiff.txt
 
 # analysis
 annotated/
+.local
+.ipython
+nltk_data/
