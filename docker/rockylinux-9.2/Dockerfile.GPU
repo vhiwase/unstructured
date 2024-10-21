@@ -1,0 +1,55 @@
+# syntax=docker/dockerfile:experimental
+FROM quay.io/unstructured-io/base-images:rocky9.2-gpu-latest as base
+
+# NOTE(crag): NB_USER ARG for mybinder.org compat:
+#             https://mybinder.readthedocs.io/en/latest/tutorials/dockerfile.html
+ARG NB_USER=notebook-user
+ARG NB_UID=1000
+ARG PIP_VERSION=24.2
+
+# Set up environment
+ENV HOME /home/${NB_USER}
+ENV PYTHONPATH="${PYTHONPATH}:${HOME}"
+ENV PATH="/home/usr/.local/bin:${PATH}"
+
+RUN groupadd --gid ${NB_UID} ${NB_USER}
+RUN useradd --uid ${NB_UID} --gid ${NB_UID} ${NB_USER}
+WORKDIR ${HOME}
+
+FROM base as deps
+
+COPY get-pip.py get-pip.py
+
+RUN python3.10 get-pip.py
+
+RUN dnf -y groupinstall "Development Tools"
+
+RUN python3 -m pip install --no-cache jupyter
+
+COPY requirements requirements
+
+RUN find requirements/ -type f -name "*.txt" -exec python3 -m pip install --no-cache -r '{}' ';'
+
+COPY custom_requirements custom_requirements
+
+RUN find custom_requirements/ -type f -name "*.txt" -exec python3 -m pip install --no-cache -r '{}' ';'
+
+RUN python3 -m pip install --no-cache -r spyder-kernels==2.5.0
+
+RUN dnf -y groupremove "Development Tools"
+
+RUN dnf clean all
+
+RUN echo 'PasswordAuthentication yes' >> /etc/ssh/sshd_config
+RUN adduser -h ${HOME} -s /bin/sh -D ${NB_USER}
+RUN echo -n "${NB_USER}:1234" | chpasswd
+
+COPY ./entrypoint.sh /
+COPY example-docs example-docs
+COPY unstructured unstructured
+
+RUN python3.10 -c "from unstructured.partition.model_init import initialize; initialize()"
+
+EXPOSE 22
+
+ENTRYPOINT ["/entrypoint.sh"]

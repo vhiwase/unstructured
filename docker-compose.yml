@@ -1,0 +1,15 @@
+version: '3.0'
+
+services:
+
+  unstructured-app:
+    build:
+      context: .
+      dockerfile: docker/rockylinux-9.2/Dockerfile.GPU
+    ports:
+      - 22:22
+    image: unstructured-app
+    container_name: unstructured-app
+    # command: ['tail', '-f', '/dev/null']
+    volumes:
+      - .:/home/notebook-user
