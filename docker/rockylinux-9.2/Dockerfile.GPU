@@ -34,7 +34,7 @@ COPY custom_requirements custom_requirements
 
 RUN find custom_requirements/ -type f -name "*.txt" -exec python3 -m pip install --no-cache -r '{}' ';'
 
-RUN python3 -m pip install --no-cache -r spyder-kernels==2.5.0
+RUN python3 -m pip install --no-cache spyder-kernels==2.5.0
 
 RUN dnf -y groupremove "Development Tools"
 
